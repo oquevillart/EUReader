@@ -10,6 +10,7 @@ from playsound3 import playsound
 FILE_PATH = r'C:\Users\Kiki\Documents\Entropia Universe\chat.log'
 
 def follow(file,callback):
+
     file.seek(0, 2)
     while True:
         line = file.readline()
@@ -107,4 +108,5 @@ class LogApp:
 if __name__ == '__main__':
     root = Tk()
     app = LogApp(root)
+    root.wm_attributes("-topmost", True)
     root.mainloop()
