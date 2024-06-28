@@ -46,9 +46,7 @@ class LogApp:
 
         self.sweat_session_start_btn = Button(self.root,text="Let's sweat !",command=self.sweat_start)
         self.sweat_session_start_btn.grid(column=0,row=4)
-
         
-
         self.elapsed_seconds = 0
         self.running = False
         self.timer_thread = None
@@ -70,14 +68,16 @@ class LogApp:
 
     def process_log_line(self, line):
         if 'You received Vibrant Sweat x' in line:
+            
             self.log_text.insert('end', line)    
             self.log_text.see('end')
             match = re.search(r'\((\d+)\)', line)
             if match:
                 self.ressource_count = self.ressource_count + int(match.group(1))
-                self.ressource_label.config(text=self.ressource_count)
+                self.ressource_label.config(text=self.ressource_count)    
+        if 'You were killed' in line:
+            self.root.bell()
 
-                
     
     def start_timer(self):
         if not self.running:
@@ -90,6 +90,7 @@ class LogApp:
             mins, secs = divmod(self.elapsed_seconds, 60)
             timer = '{:02d}:{:02d}'.format(mins, secs)
             self.clock_label.config(text=timer)
+            # self.root.bell()
             time.sleep(1)
             self.elapsed_seconds += 1
 
