@@ -1,5 +1,4 @@
 from tkinter import *
-from datetime import date,datetime
 from parse import *
 import time
 import threading
@@ -10,43 +9,51 @@ from playsound3 import playsound
 FILE_PATH = r'C:\Users\Kiki\Documents\Entropia Universe\chat.log'
 
 def follow(file,callback):
-
     file.seek(0, 2)
+    count = 0
     while True:
-        line = file.readline()
-        if not line:
+        line = file.readline()      
+        if 'You received Vibrant Sweat x' in line:
+            match = re.search(r'\((\d+)\)', line)
+            if match:
+                count = 0
+                callback(f"SWEAT({match.group(1)})\n")
+        elif 'You were killed' in line:
+            playsound("./file.wav")
+            count = 0
+            callback(line)
+        else:
+            count = count + 1
+            if count >= 1200 and count >= 1210:
+                playsound("./file.wav")
+                count = 0
             time.sleep(0.1)
             continue
-        callback(line)
+        
 
 class LogApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Entropia Universe Tracker")
+        self.root.minsize(200, 100)
 
+        self.frame = Frame(self.root)
+        self.frame.pack()
         # fonts
         titles_font = ("Aria Bold", 24)
-
-        # date session start label
-        current_datetime = date.today()
-        start_date_label = Label(self.root,text="session start date : " + current_datetime.strftime("%d-%m-%Y"), font =titles_font)
-        start_date_label.grid(column=0,row=0)
 
         self.log_thread = None
 
         #  label
-        self.clock_label = Label(self.root,text="waiting for session start",font=titles_font)
-        self.clock_label.grid(column=0,row=1)
+        self.clock_label = Label(self.frame,text="waiting for session start",font=titles_font)
+        self.clock_label.grid(column=0,row=0)
 
         self.ressource_count = 0 
-        self.ressource_label = Label(self.root,text=self.ressource_count,font=titles_font)
-        self.ressource_label.grid(column=0,row=2)
-        
-        self.log_text = Text(self.root, wrap='word', state='normal', font=('Helvetica', 12))
-        self.log_text.grid(column=0,row=3)
+        self.ressource_label = Label(self.frame,text=self.ressource_count,font=titles_font)
+        self.ressource_label.grid(column=0,row=1)
 
-        self.sweat_session_start_btn = Button(self.root,text="Let's sweat !",command=self.sweat_start)
-        self.sweat_session_start_btn.grid(column=0,row=4)
+        self.sweat_session_start_btn = Button(self.frame,text="Let's sweat !",command=self.sweat_start)
+        self.sweat_session_start_btn.grid(column=0,row=2)
         
         self.elapsed_seconds = 0
         self.running = False
@@ -70,15 +77,12 @@ class LogApp:
             follow(file, self.process_log_line)
 
     def process_log_line(self, line):
-        if 'You received Vibrant Sweat x' in line:
-            self.log_text.insert('end', line)    
-            self.log_text.see('end')
+        if "SWEAT" in line:
             match = re.search(r'\((\d+)\)', line)
             if match:
                 self.ressource_count = self.ressource_count + int(match.group(1))
-                self.ressource_label.config(text=self.ressource_count)    
-        if 'You were killed' in line:
-            playsound("./file.wav")
+                self.ressource_label.config(text=self.ressource_count)
+            
 
     
     def start_timer(self):
