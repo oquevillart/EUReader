@@ -4,6 +4,7 @@ from parse import *
 import time
 import threading
 import re
+from playsound3 import playsound
 
 # file reader
 FILE_PATH = r'C:\Users\Kiki\Documents\Entropia Universe\chat.log'
@@ -16,7 +17,6 @@ def follow(file,callback):
             time.sleep(0.1)
             continue
         callback(line)
-
 
 class LogApp:
     def __init__(self, root):
@@ -51,7 +51,9 @@ class LogApp:
         self.running = False
         self.timer_thread = None
 
+
     def sweat_start(self):
+
         self.start_log_following()
         self.start_timer()
 
@@ -68,7 +70,6 @@ class LogApp:
 
     def process_log_line(self, line):
         if 'You received Vibrant Sweat x' in line:
-            
             self.log_text.insert('end', line)    
             self.log_text.see('end')
             match = re.search(r'\((\d+)\)', line)
@@ -76,7 +77,7 @@ class LogApp:
                 self.ressource_count = self.ressource_count + int(match.group(1))
                 self.ressource_label.config(text=self.ressource_count)    
         if 'You were killed' in line:
-            self.root.bell()
+            playsound("./file.wav")
 
     
     def start_timer(self):
@@ -90,7 +91,6 @@ class LogApp:
             mins, secs = divmod(self.elapsed_seconds, 60)
             timer = '{:02d}:{:02d}'.format(mins, secs)
             self.clock_label.config(text=timer)
-            # self.root.bell()
             time.sleep(1)
             self.elapsed_seconds += 1
 
