@@ -1,4 +1,5 @@
-from tkinter import *
+import tkinter as tk
+from tkinter import Frame,Label,Button
 from parse import *
 import time
 import threading
@@ -6,30 +7,7 @@ import re
 from playsound3 import playsound
 
 # file reader
-FILE_PATH = r'C:\Users\Kiki\Documents\Entropia Universe\chat.log'
-
-def follow(file,callback):
-    file.seek(0, 2)
-    count = 0
-    while True:
-        line = file.readline()      
-        if 'You received Vibrant Sweat x' in line:
-            match = re.search(r'\((\d+)\)', line)
-            if match:
-                count = 0
-                callback(f"SWEAT({match.group(1)})\n")
-        elif 'You were killed' in line:
-            playsound("./file.wav")
-            count = 0
-            callback(line)
-        else:
-            count = count + 1
-            if count >= 1200 and count >= 1210:
-                playsound("./file.wav")
-                count = 0
-            time.sleep(0.1)
-            continue
-        
+FILE_PATH = r'C:\Users\Kiki\Documents\Entropia Universe\chat.log' 
 
 class LogApp:
     def __init__(self, root):
@@ -52,37 +30,59 @@ class LogApp:
         self.ressource_label = Label(self.frame,text=self.ressource_count,font=titles_font)
         self.ressource_label.grid(column=0,row=1)
 
-        self.sweat_session_start_btn = Button(self.frame,text="Let's sweat !",command=self.sweat_start)
+        self.sweat_session_start_btn = Button(self.frame,text="Let's sweat !",command=self.toogle_sweat)
         self.sweat_session_start_btn.grid(column=0,row=2)
         
         self.elapsed_seconds = 0
         self.running = False
         self.timer_thread = None
 
+        self.following = False
 
-    def sweat_start(self):
+        self.last_read_time = time.time()
 
-        self.start_log_following()
-        self.start_timer()
+        self.no_new_lines_interval = 120
 
-    def start_log_following(self):
-        if self.log_thread is None:
-            file_path = FILE_PATH
-            self.log_thread = threading.Thread(target=self.follow_log_file, args=(file_path,))
-            self.log_thread.daemon = True
-            self.log_thread.start()
+    def toogle_sweat(self):
+        if not self.following:
+            self.start_following()
+            self.start_timer()
+            self.sweat_session_start_btn.config(text="Pause")
+        else:
+            self.stop_following()
+            self.stop_timer()
+            self.sweat_session_start_btn.config(text="Let's sweat !")
 
-    def follow_log_file(self, file_path):
-        with open(file_path, 'r',encoding="utf-8") as file:
-            follow(file, self.process_log_line)
+    def follow(self):
+        self.last_read_time = time.time()
+        with open(FILE_PATH, "r") as f:
+            f.seek(0, 2)
+            while self.following:
+                line = f.readline()
+                if line:
+                    if 'You received Vibrant Sweat x' in line:
+                        self.last_read_time = time.time()
+                        match = re.search(r'\((\d+)\)', line)
+                        if match:
+                            self.ressource_count = self.ressource_count + int(match.group(1))
+                            self.ressource_label.config(text=self.ressource_count)
+                    elif 'You were killed' in line:
+                        self.last_read_time = time.time()
+                        playsound("./file.wav")
+                else:
+                    time.sleep(0.1)
+                    if time.time() - self.last_read_time > self.no_new_lines_interval:
+                        playsound("./file.wav")  
+                        self.last_read_time = time.time()
 
-    def process_log_line(self, line):
-        if "SWEAT" in line:
-            match = re.search(r'\((\d+)\)', line)
-            if match:
-                self.ressource_count = self.ressource_count + int(match.group(1))
-                self.ressource_label.config(text=self.ressource_count)
-            
+    def start_following(self):
+        self.following = True
+        self.follow_thread = threading.Thread(target=self.follow)
+        self.follow_thread.start()
+
+    def stop_following(self):
+        self.following = False
+        self.follow_thread.join()  # Attendre la fin du thread
 
     
     def start_timer(self):
@@ -110,7 +110,7 @@ class LogApp:
         self.running = False
 
 if __name__ == '__main__':
-    root = Tk()
+    root = tk.Tk()
     app = LogApp(root)
     root.wm_attributes("-topmost", True)
     root.mainloop()
